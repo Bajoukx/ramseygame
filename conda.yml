@@ -1,4 +1,4 @@
-name: {{GITHUB_REPOSITORY}}_env
+name: inductiva/RamseyNumbers_env
 
 channels:
   - conda-forge
