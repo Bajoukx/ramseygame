@@ -1,4 +1,4 @@
-name: inductiva/RamseyNumbers_env
+name: RamseyNumbers
 
 channels:
   - conda-forge
