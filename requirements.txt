@@ -1,1 +1,4 @@
 absl-py
+gym
+matplotlib
+networkx
