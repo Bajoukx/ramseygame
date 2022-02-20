@@ -18,6 +18,7 @@ something that creates a k_clique.
 """
 
 import gym
+import matplotlib.pyplot as plt
 import networkx
 
 
@@ -40,7 +41,6 @@ class RamseyGame(gym.Env):
         # necessary space.
 
     def step(self, action):
-        networkx.draw(self.graph)
 
         # Place an edge
         action_edge = self.action_dictionary[action]
@@ -61,17 +61,22 @@ class RamseyGame(gym.Env):
         self.done = False
 
         self.graph = networkx.empty_graph(self.n_nodes)
+        self.graph = networkx.empty_graph(self.n_nodes)
+        self.render()
         self.nodes = list(self.graph.nodes)
+        print(self.nodes)
         self.edges = list(self.graph.edges)
+        print('edges', self.edges)
         observation = self.edges
         return observation  # reward, done, info can't be included
 
     def render(self, mode='human'):
         """Nice visualization of graph."""
-        pass
+        networkx.draw(self.graph)
+        plt.show()
 
     def close(self):
-        ...
+        pass
 
     def _size_biggest_clique(self):
         cliques = networkx.find_cliques(self.graph)
