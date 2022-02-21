@@ -20,7 +20,30 @@ something that creates a k_clique.
 import gym
 import matplotlib.pyplot as plt
 import networkx
+import numpy as np
 
+
+def graph_hot_encoder_dict(n_nodes):
+    """A dictionary that encodes integers into graph edges.
+    
+    A undirected graph with n nodes has a maximum of n(n-1)/2 edges. So we can
+    encode the integers from 1 to n(n-1)/2 has the i-th edge of the graph. This
+    is done in the following way:
+
+       int   |   edge
+    ---------------------
+    0        | (0, 0)
+    1        | (0, 1)
+    ...
+    n-1      | (0,n-1)
+    n        | (1, 1)
+    ...
+    n(n-1)/2 | (n-1, n-1)
+
+    Generating a complete undirected graph with n nodes gives us all the
+    necessary edges. The i-th tuple is then accessed by it's index: encoder_dictionary[i]
+    """
+    return list(networkx.complete_graph(n_nodes).edges)
 
 class RamseyGame(gym.Env):
     """Custom Environment that follows gym interface"""
@@ -30,44 +53,50 @@ class RamseyGame(gym.Env):
         """Inits the Ramsey Game gym environment."""
         super(RamseyGame, self).__init__()
         self.n_nodes = n_nodes
-        n_edges = self.n_nodes * (self.n_nodes - 1) / 2
+        self.n_edges = int(self.n_nodes * (self.n_nodes - 1) / 2)
         self.k_clique = k_clique
-        self.action_dictionary = list(networkx.complete_graph(self.n_nodes).edges)
+        self.action_dictionary = graph_hot_encoder_dict(self.n_nodes)
 
-        self.action_space = gym.spaces.Discrete(n_edges)
-        self.observation_space = gym.spaces.Tuple(
-            (gym.spaces.Discrete(self.n_nodes),
-             gym.spaces.Discrete(self.n_nodes)))  # This has double of the
-        # necessary space.
+        self.action_space = gym.spaces.Discrete(self.n_edges)
+        self.observation_space = gym.spaces.MultiBinary(self.n_edges)
 
     def step(self, action):
-
-        # Place an edge
+        # Place an edge.
         action_edge = self.action_dictionary[action]
-        #print(action_edge)
+        print(self.action_dictionary)
+        print(action_edge)
         self.graph.add_edge(*action_edge)
 
         # Check stopping condition.
         if self._size_biggest_clique() >= self.k_clique:
             self.done = True
 
-        self.reward = self._get_reward()
-        observation = list(self.graph.nodes)
+        # Get reward.
+        self.step_reward = self._get_reward()
+        self.reward = self.step_reward + self.previous_reward
+        self.previous_reward = self.reward
+
+        # Update observation
+        observation = np.zeros(self.n_edges, dtype=int) #list(self.graph.nodes)
+        for i in range(self.n_edges):
+            if self.action_dictionary[i] in list(self.graph.edges):
+                observation[i] = 1
+        print('observation', observation)
+        # observation = action
         info = {}
         return observation, self.reward, self.done, info
 
     def reset(self):
         self.score = 0
         self.done = False
+        self.previous_reward = 0
 
         self.graph = networkx.empty_graph(self.n_nodes)
-        self.graph = networkx.empty_graph(self.n_nodes)
-        self.render()
         self.nodes = list(self.graph.nodes)
-        print(self.nodes)
-        self.edges = list(self.graph.edges)
-        print('edges', self.edges)
+        self.edges = np.zeros(self.n_edges, dtype=int) #list(self.graph.edges)
+
         observation = self.edges
+        #observation = [0]
         return observation  # reward, done, info can't be included
 
     def render(self, mode='human'):
@@ -93,6 +122,6 @@ class RamseyGame(gym.Env):
         cliques from that edge.
         """
         if self._size_biggest_clique() >= self.k_clique:
-            return 1
+            return 10
         else:
             return -1

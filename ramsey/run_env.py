@@ -1,7 +1,11 @@
+from stable_baselines3.common.env_checker import check_env
+
 from ramsey_env import RamseyGame
 
 environment = RamseyGame(n_nodes = 6, k_clique = 3)
-episodes = 4
+
+check_env(environment)
+episodes = 1
 
 for episode in range(episodes):
 
