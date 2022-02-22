@@ -1,3 +1,5 @@
 absl-py
 pytest~=7.0.0
 scipy~=1.8.0
+numpy~=1.21.2
+dgl
