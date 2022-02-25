@@ -17,9 +17,6 @@ This is too complicated for the first iteration, so let's try to train
 something that creates a k_clique.
 """
 
-import itertools
-from multiprocessing.dummy import active_children
-
 import gym
 import matplotlib.pyplot as plt
 import networkx
@@ -28,7 +25,7 @@ import numpy as np
 
 def graph_hot_encoder_dict(n_nodes):
     """A dictionary that encodes integers into graph edges.
-    
+
     A undirected graph with n nodes has a maximum of n(n-1)/2 edges. So we can
     encode the integers from 1 to n(n-1)/2 has the i-th edge of the graph. This
     is done in the following way:
@@ -44,12 +41,14 @@ def graph_hot_encoder_dict(n_nodes):
     n(n-1)/2 | (n-1, n-1)
 
     Generating a complete undirected graph with n nodes gives us all the
-    necessary edges. The i-th tuple is then accessed by it's index: encoder_dictionary[i]
+    necessary edges. The i-th tuple is then accessed by it's index:
+    encoder_dictionary[i]
     """
     return list(networkx.complete_graph(n_nodes).edges)
 
 
-def hot_encode(dictionary, graph_edges):
+def one_hot_encode(dictionary, graph_edges):
+    """One hot encodes a graph into a binary list."""
     return [element in list(graph_edges) for element in dictionary]
 
 
@@ -59,7 +58,7 @@ class RamseyGame(gym.Env):
 
     def __init__(self, n_nodes, k_clique):
         """Inits the Ramsey Game gym environment."""
-        super(RamseyGame, self).__init__()
+        super().__init__()
         self.n_nodes = n_nodes
         self.n_edges = int(self.n_nodes * (self.n_nodes - 1) / 2)
         self.k_clique = k_clique
@@ -68,37 +67,37 @@ class RamseyGame(gym.Env):
         self.action_space = gym.spaces.Discrete(self.n_edges)
         self.observation_space = gym.spaces.MultiBinary(self.n_edges)
 
-        # self.reset()
-
     def step(self, action):
-        # Place an edge.
+        """Performs a step in the environment.
+
+        The step consists of adding an edge to the graph, computting the cliques
+        of the graph, giving a reward according to the size of the biggest
+        clique and finnally encoding the graph to a binary vector.
+        """
+        # Place an edge in the graph.
         action_edge = self.action_dictionary[action]
         self.graph.add_edge(*action_edge)
 
-        # Counts cliques based on previous cliques.
-        self.previous_cliques = self.cliques
-        self.cliques = networkx.cliques_containing_node(self.graph, action_edge,
-                                                        self.previous_cliques)
-        biggest_previous_clique = max(self.cliques, default=0)
-        biggest_clique = max(self.cliques, default=0)
+        # Get biggest clique.
+        self.biggest_clique = networkx.graph_clique_number(self.graph)
 
         # Check stopping condition.
-        if biggest_clique >= self.k_clique:
+        if self.biggest_clique >= self.k_clique:
             self.done = True
 
         # Get reward.
-        self.step_reward = self._get_reward(biggest_clique,
-                                            biggest_previous_clique)
+        self.step_reward = self._get_reward(self.biggest_clique)
         self.reward = self.step_reward + self.previous_reward
         self.previous_reward = self.reward
 
         # Update observation
-        observation = hot_encode(self.action_dictionary, self.graph.edges)
+        observation = one_hot_encode(self.action_dictionary, self.graph.edges)
 
         info = {}
         return observation, self.reward, self.done, info
 
     def reset(self):
+        """Resets the environment when a k_clique is found."""
         self.score = 0
         self.done = False
         self.previous_reward = 0
@@ -106,22 +105,21 @@ class RamseyGame(gym.Env):
         self.graph = networkx.empty_graph(self.n_nodes)
         self.nodes = list(self.graph.nodes)
         self.edges = np.zeros(self.n_edges, dtype=int)  #list(self.graph.edges)
-        self.previous_cliques = []
-        self.cliques = []
+        self.biggest_clique = 0
 
         observation = self.edges
         return observation  # reward, done, info can't be included
 
-    def render(self, mode='human'):
+    def render(self):
         """Nice visualization of graph."""
         networkx.draw(self.graph)
-        plt.show()
+        plt.pause(0.1)
+        plt.clf()
 
     def close(self):
         pass
 
-    def _get_reward(self, size_of_biggest_clique,
-                    size_of_biggest_previous_clique):
+    def _get_reward(self, size_of_biggest_clique):
         """Reward function for k_clique finding.
 
         Ideas to improve this reward function:
@@ -132,13 +130,5 @@ class RamseyGame(gym.Env):
         """
         if size_of_biggest_clique >= self.k_clique:
             return 10
-        if size_of_biggest_clique > size_of_biggest_previous_clique:
-            return -1
         else:
-            return -5
-
-        #return self._size_biggest_clique() - self.n_nodes
-        # if self._size_biggest_clique() >= self.k_clique:
-        #     return 10
-        # else:
-        #     return -1
+            return -1

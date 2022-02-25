@@ -2,3 +2,5 @@ absl-py
 gym
 matplotlib
 networkx
+numpy
+stable_baselines3

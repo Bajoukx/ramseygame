@@ -1,45 +1,39 @@
-import time
-import os
+"""Learns the environment"""
 
-import gym
-from stable_baselines3 import PPO
-from stable_baselines3.common.monitor import Monitor
+from absl import app
+from absl import logging
+from absl import flags
 
 from ramsey_env import RamseyGame
-current_time = time.time()
-models_dir = f'models/{int(current_time)}/'
-logdir = f'logs/{int(current_time)}/'
+from stable_baselines3 import PPO
 
-if not os.path.exists(models_dir):
-    os.makedirs(models_dir)
+FLAGS = flags.FLAGS
 
-if not os.path.exists(models_dir):
-    os.makedirs(logdir)
+flags.DEFINE_integer('n_nodes', 6, 'Number of Nodes', lower_bound=0)
 
-environment = RamseyGame(n_nodes = 6, k_clique = 3)
-environment.reset()
+flags.DEFINE_integer('k_clique_number',
+                     3,
+                     'Size of clique to find in graph.',
+                     lower_bound=3)
 
-model = PPO('MlpPolicy', environment, verbose=1, tensorboard_log=logdir)
+flags.DEFINE_integer('n_timesteps',
+                     10000,
+                     'Number of timesteps to run the nevironment for',
+                     lower_bound=1)
 
-# TIMESTEPS = 10000
-# iters = 0
 
-# while True:
-#     iters += 1
-#     model.learn(total_timesteps=TIMESTEPS, reset_num_timesteps=False, tb_log_name=f'PPO')
-#     model.save(f'{models_dir}/{TIMESTEPS*iters}')
-episodes = 3
-for episode in range(episodes):
+def main(_):
+    """Learns the environment."""
 
-    done = False
-    obs = environment.reset()
-    while not done:
-        random_action = environment.action_space.sample()
-        print('action', random_action)
-        obs, reward, done, info = environment.step(random_action)
-        print('reward', reward)
-        environment.render()
+    environment = RamseyGame(n_nodes=6, k_clique=3)
+    environment.reset()
 
-        if done:
-            environment.render()
-        
+    model = PPO('MlpPolicy', environment, verbose=1)
+
+    while True:
+        model.learn(total_timesteps=FLAGS.n_timesteps)
+
+
+if __name__ == '__main__':
+    logging.set_verbosity(logging.INFO)
+    app.run(main)
