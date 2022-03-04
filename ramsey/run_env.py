@@ -25,10 +25,11 @@ flags.DEFINE_integer('n_timesteps',
 def main(_):
     """Learns the environment."""
 
-    environment = RamseyGame(n_nodes=6, k_clique=3)
+    environment = RamseyGame(n_nodes=FLAGS.n_nodes,
+                             k_clique=FLAGS.k_clique_number)
     environment.reset()
 
-    model = PPO('MlpPolicy', environment, verbose=1)
+    model = PPO('MlpPolicy', environment, verbose=1, learning_rate=0.001)
 
     while True:
         model.learn(total_timesteps=FLAGS.n_timesteps)

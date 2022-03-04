@@ -54,7 +54,7 @@ def one_hot_encode(dictionary, graph_edges):
 
 class RamseyGame(gym.Env):
     """Custom Environment that follows gym interface"""
-    metadata = {'render.modes': ['human']}  # Not sure if this needs to be here.
+    metadata = {'render.modes': ['human']}
 
     def __init__(self, n_nodes, k_clique):
         """Inits the Ramsey Game gym environment."""
@@ -110,11 +110,12 @@ class RamseyGame(gym.Env):
         observation = self.edges
         return observation  # reward, done, info can't be included
 
-    def render(self):
+    def render(self, mode='human'):
         """Nice visualization of graph."""
-        networkx.draw(self.graph)
-        plt.pause(0.1)
-        plt.clf()
+        if mode == 'human':
+            networkx.draw(self.graph)
+            plt.pause(0.1)
+            plt.clf()
 
     def close(self):
         pass
