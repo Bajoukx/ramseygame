@@ -17,10 +17,15 @@ This is too complicated for the first iteration, so let's try to train
 something that creates a k_clique.
 """
 
+import sys
+
 import gym
 import matplotlib.pyplot as plt
 import networkx
 import numpy as np
+import itertools
+
+from ramsey import reward_functions
 
 
 def graph_hot_encoder_dict(n_nodes):
@@ -52,19 +57,26 @@ def one_hot_encode(dictionary, graph_edges):
     return [element in list(graph_edges) for element in dictionary]
 
 
+def one_hot_decode(dictionary, binary_list):
+    """One hot decodes a binary list into a list of edges."""
+    edges = itertools.compress(dictionary, binary_list)
+    return edges
+
+
 class RamseyGame(gym.Env):
     """Custom Environment that follows gym interface"""
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, n_nodes, k_clique):
+    def __init__(self, n_nodes, k_clique, quit_when_found=False):
         """Inits the Ramsey Game gym environment."""
         super().__init__()
+        self.quit_when_found = quit_when_found
         self.n_nodes = n_nodes
         self.n_edges = int(self.n_nodes * (self.n_nodes - 1) / 2)
         self.k_clique = k_clique
         self.action_dictionary = graph_hot_encoder_dict(self.n_nodes)
 
-        self.action_space = gym.spaces.Discrete(self.n_edges)
+        self.action_space = gym.spaces.MultiBinary(self.n_edges)
         self.observation_space = gym.spaces.MultiBinary(self.n_edges)
 
     def step(self, action):
@@ -74,21 +86,14 @@ class RamseyGame(gym.Env):
         of the graph, giving a reward according to the size of the biggest
         clique and finnally encoding the graph to a binary vector.
         """
+        self.graph = networkx.empty_graph(self.n_nodes)
         # Place an edge in the graph.
-        action_edge = self.action_dictionary[action]
-        self.graph.add_edge(*action_edge)
+        actions = one_hot_decode(self.action_dictionary, action)
+        for edge in actions:
+            self.graph.add_edge(*edge)
 
-        # Get biggest clique.
-        self.biggest_clique = networkx.graph_clique_number(self.graph)
-
-        # Check stopping condition.
-        if self.biggest_clique >= self.k_clique:
-            self.done = True
-
-        # Get reward.
-        self.step_reward = self._get_reward(self.biggest_clique)
-        self.reward = self.step_reward + self.previous_reward
-        self.previous_reward = self.reward
+        # Get reward and update done.
+        self.reward = self._get_reward()
 
         # Update observation
         observation = one_hot_encode(self.action_dictionary, self.graph.edges)
@@ -106,6 +111,7 @@ class RamseyGame(gym.Env):
         self.nodes = list(self.graph.nodes)
         self.edges = np.zeros(self.n_edges, dtype=int)  #list(self.graph.edges)
         self.biggest_clique = 0
+        self.previous_biggest_clique = 0
 
         observation = self.edges
         return observation  # reward, done, info can't be included
@@ -120,7 +126,7 @@ class RamseyGame(gym.Env):
     def close(self):
         pass
 
-    def _get_reward(self, size_of_biggest_clique):
+    def _get_reward(self):
         """Reward function for k_clique finding.
 
         Ideas to improve this reward function:
@@ -129,7 +135,15 @@ class RamseyGame(gym.Env):
         - Use the stepaction. A action is placing an edge, start counting
         cliques from that edge.
         """
-        if size_of_biggest_clique >= self.k_clique:
-            return 10
-        else:
-            return -1
+        # Get biggest clique.
+        biggest_clique = reward_functions.ramsey_number(self.graph)
+        self.reward = -biggest_clique
+        #print(biggest_clique)
+        if biggest_clique <= self.k_clique:
+            self.done = True
+
+            if self.quit_when_found:
+                if biggest_clique < self.k_clique:
+                    networkx.write_edgelist(self.graph, 'ramsey/graphs/win.txt')
+                    sys.exit()
+        return self.reward
