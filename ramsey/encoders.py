@@ -1,7 +1,7 @@
 """Encoder functions for the ramsey environment.
 
 TODO(@bajoukx): Consider using openai's gym wrappers for this instead. More
-details can be found at: 
+details can be found at:
 https://alexandervandekleut.github.io/gym-wrappers/
 """
 
