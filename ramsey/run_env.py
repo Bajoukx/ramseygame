@@ -7,12 +7,9 @@ from absl import logging
 from absl import flags
 
 import gym
-from gym.envs.registration import register
 from stable_baselines3 import A2C
 from stable_baselines3.common.vec_env import SubprocVecEnv
 from stable_baselines3.common.monitor import Monitor
-
-from ramsey.envs.ramsey_env import RamseyGame
 
 FLAGS = flags.FLAGS
 
@@ -46,10 +43,8 @@ def main(_):
 
     cpu_count = multiprocessing.cpu_count()
     env_list = [
-        make_environment(
-            'ramsey-v0', seed, FLAGS.n_nodes, FLAGS.k_clique_number
-            )
-            for seed in range(cpu_count)
+        make_environment('ramsey-v0', seed, FLAGS.n_nodes,
+                         FLAGS.k_clique_number) for seed in range(cpu_count)
     ]
     environment = SubprocVecEnv(env_list)
 
