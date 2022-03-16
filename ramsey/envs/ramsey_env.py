@@ -23,44 +23,9 @@ import gym
 import matplotlib.pyplot as plt
 import networkx
 import numpy as np
-import itertools
 
+from ramsey import encoders
 from ramsey import reward_functions
-
-
-def graph_hot_encoder_dict(n_nodes):
-    """A dictionary that encodes integers into graph edges.
-
-    A undirected graph with n nodes has a maximum of n(n-1)/2 edges. So we can
-    encode the integers from 1 to n(n-1)/2 has the i-th edge of the graph. This
-    is done in the following way:
-
-       int   |   edge
-    ---------------------
-    0        | (0, 0)
-    1        | (0, 1)
-    ...
-    n-1      | (0,n-1)
-    n        | (1, 1)
-    ...
-    n(n-1)/2 | (n-1, n-1)
-
-    Generating a complete undirected graph with n nodes gives us all the
-    necessary edges. The i-th tuple is then accessed by it's index:
-    encoder_dictionary[i]
-    """
-    return list(networkx.complete_graph(n_nodes).edges)
-
-
-def one_hot_encode(dictionary, graph_edges):
-    """One hot encodes a graph into a binary list."""
-    return [element in list(graph_edges) for element in dictionary]
-
-
-def one_hot_decode(dictionary, binary_list):
-    """One hot decodes a binary list into a list of edges."""
-    edges = itertools.compress(dictionary, binary_list)
-    return edges
 
 
 class RamseyGame(gym.Env):
@@ -74,7 +39,7 @@ class RamseyGame(gym.Env):
         self.n_nodes = n_nodes
         self.n_edges = int(self.n_nodes * (self.n_nodes - 1) / 2)
         self.k_clique = k_clique
-        self.action_dictionary = graph_hot_encoder_dict(self.n_nodes)
+        self.action_dictionary = encoders.graph_hot_encoder_dict(self.n_nodes)
 
         self.action_space = gym.spaces.MultiBinary(self.n_edges)
         self.observation_space = gym.spaces.MultiBinary(self.n_edges)
@@ -88,7 +53,7 @@ class RamseyGame(gym.Env):
         """
         self.graph = networkx.empty_graph(self.n_nodes)
         # Place an edge in the graph.
-        actions = one_hot_decode(self.action_dictionary, action)
+        actions = encoders.one_hot_decode(self.action_dictionary, action)
         for edge in actions:
             self.graph.add_edge(*edge)
 
@@ -96,7 +61,8 @@ class RamseyGame(gym.Env):
         self.reward = self._get_reward()
 
         # Update observation
-        observation = one_hot_encode(self.action_dictionary, self.graph.edges)
+        observation = encoders.one_hot_encode(self.action_dictionary,
+                                              self.graph.edges)
 
         info = {}
         return observation, self.reward, self.done, info
