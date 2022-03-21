@@ -3,6 +3,6 @@
 from gym.envs.registration import register
 
 register(
-    id='ramsey-v0',
+    id='RamseyGame-v0',
     entry_point='ramsey.envs:RamseyGame',
 )

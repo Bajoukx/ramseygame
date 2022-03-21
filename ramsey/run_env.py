@@ -11,6 +11,8 @@ from stable_baselines3 import A2C
 from stable_baselines3.common.vec_env import SubprocVecEnv
 from stable_baselines3.common.monitor import Monitor
 
+import ramsey
+
 FLAGS = flags.FLAGS
 
 flags.DEFINE_integer('n_nodes', 6, 'Number of Nodes', lower_bound=0)
@@ -27,8 +29,9 @@ flags.DEFINE_integer('n_timesteps',
 
 
 def make_environment(environment_id, seed, n_nodes, k_clique):
-
+    """Returns a function that creates the environment."""
     def get_env():
+        """Returns a environment."""
         env = gym.make(environment_id, n_nodes=n_nodes, k_clique=k_clique)
         env = Monitor(env)
         env.seed(seed)
@@ -43,7 +46,7 @@ def main(_):
 
     cpu_count = multiprocessing.cpu_count()
     env_list = [
-        make_environment('ramsey-v0', seed, FLAGS.n_nodes,
+        make_environment('RamseyGame-v0', seed, FLAGS.n_nodes,
                          FLAGS.k_clique_number) for seed in range(cpu_count)
     ]
     environment = SubprocVecEnv(env_list)
