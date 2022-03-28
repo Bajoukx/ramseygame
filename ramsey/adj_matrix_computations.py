@@ -1,4 +1,4 @@
-"""In this script the cliques that each node is part of is computed using adjacency matrix multiplications"""
+"""Computation of cliques of a graph using adjacency matrix multiplications"""
 
 import numpy as np
 import torch
@@ -9,13 +9,37 @@ from absl import flags
 from graph_generator import random_graph, complement_graph
 
 FLAGS = flags.FLAGS
-flags.DEFINE_integer("n_nodes", 10, "Number of nodes that the graph should have.")
-flags.DEFINE_integer("n_edges", None, "Number of edges of the graph.")
-flags.DEFINE_integer("max_clique_size", None, "Size of cliques to be computed to.")
+flags.DEFINE_integer("n_nodes",
+                     10,
+                     "Number of nodes that the graph should have.")
+flags.DEFINE_integer("n_edges",
+                     None,
+                     "Number of edges of the graph.")
+flags.DEFINE_integer("max_clique_size",
+                     None,
+                     "Size of cliques to be computed to.")
 
 
 def next_clique_multiplication(cliques, n_nodes=None):
-    """Function constructing the k+1 cliques tensor from the k cliques one"""
+    """Constructs the tensor of k+1 cliques from the tensor of k cliques.
+
+    Suppose that A_k is the k dimensional tensor such that the entry
+    (i_1,...,i_k) is equal to 1 if the nodes (i_1,...,i_k) form a clique
+    and zero otherwise. Then A_{k+1} can be computed from A_k in the
+    following way:
+    For a node i, let A^0_{k,i} be the k-1 dimensional tensor A_k[i, ...]. Then
+    then entry (i_1,... , i_k) in
+    A^0_{k,i} * A_k
+    will be 1 if the nodes form a k clique and
+    (i, i_2, ..., i_k) forms one as well. The same way, an entry in
+    A^0_{k,i} * A^1_{k,i} * ... * A^k_{k,i} * A_k
+    is equal to one if (i_1,... , i_k, i) is a k+1 node.
+
+    To perform all the multiplications at once we just use broadcasting, i.e.,
+    define A^i_k = A_k.reshape( add 1 dimensional in entry i)
+    so that
+    A_{k+1} = (Prod_i A^i_k) * A_k.
+    """
 
     if n_nodes is None:
         n_nodes = cliques.shape[0]
@@ -70,8 +94,9 @@ def cliques_counter(graph, max_clique_size=None):
     all_cliques = [n_nodes * [0.] for _ in range(2, max_clique_size + 1)]
     for clique in range(2, nr_cliques_computed + 1):
         for node in range(n_nodes):
-            all_cliques[clique - 2][node] = torch.sum(cliques[clique][node]).item() / (
-                np.math.factorial(int(clique) - 1))
+            all_cliques[clique - 2][node] = torch.sum(
+                cliques[clique][node]
+            ).item() / (np.math.factorial(int(clique) - 1))
 
     return torch.Tensor(all_cliques)
 
