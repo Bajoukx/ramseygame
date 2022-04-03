@@ -32,15 +32,18 @@ class CustomGraphDataset(Dataset):
 
         dual = networkx.complement(random_graph)
         dual_cliques = list(networkx.enumerate_all_cliques(dual))
-        dual_clique_number = networkx.graph_clique_number(dual)
+        dual_clique_number = networkx.graph_clique_number(dual, dual_cliques)
 
 
         return {
+            'graph': list(random_graph),
             'graph_edges': list(random_graph.edges),
             'cliques': cliques,
             'n_edges': random_graph.number_of_edges(),
             'clique_number': clique_number,
-            'dual_clique_number': dual_clique_number
+            'dual': list(dual),
+            'dual_edges': list(dual.edges),
+            'dual_clique_number': dual_clique_number,
+            'dual_cliques': dual_cliques,
+            'dual_clique_number': dual_clique_number,
         }
-
-    
