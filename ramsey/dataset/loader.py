@@ -8,13 +8,15 @@ from ramsey.dataset import generator
 
 
 def main(_):
-    dataset = generator.CustomGraphDataset(43, 0.5, n_samples=2000)
-    # logging.info(dataset[100]['clique_number'])
     file_path = 'test_1000.npy'
     dataset = np.load(file_path, allow_pickle=True)
     logging.info(dataset)
     clique_sizes = []
     dual_clique_sizes = []
+    size_one_cliques = []
+    size_two_cliques = []
+    size_three_cliques = []
+    size_four_cliques = []
     for i in range(len(dataset)):
         clique_sizes.append(dataset[i].get('clique_number'))
         dual_clique_sizes.append(dataset[i].get('dual_clique_number'))
