@@ -16,7 +16,7 @@ def complete_graph(n_nodes):
 
 
 def random_graph(n_nodes, n_edges=None):
-    """A random graph generator having a prescribed number of edges"""
+    """A random graph generator having a prescribed number of edges."""
 
     if n_edges is None:
         n_edges = np.random.randint(n_nodes,
@@ -36,7 +36,7 @@ def random_graph(n_nodes, n_edges=None):
 
 
 def complement_graph(graph):
-    """A function proving the complement of a given graph"""
+    """Construction of the complement of a given graph."""
 
     n_nodes = graph.num_nodes()
 
@@ -50,6 +50,6 @@ def complement_graph(graph):
     complement_graph_adj = complete_graph_adj - adj
 
     src, dst = complement_graph_adj.nonzero().transpose(0, 1).reshape(2, -1)
-    complement = dgl.graph((src, dst))
+    complement = dgl.graph((src, dst), num_nodes=n_nodes)
 
     return complement

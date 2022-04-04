@@ -17,11 +17,12 @@ for each node:
 
 import dgl
 import torch
+from scipy.special import comb
 from absl import app
 from absl import logging
 from absl import flags
 
-from graph_generator import random_graph, complement_graph
+from graph_generator import random_graph, complement_graph, complete_graph
 
 FLAGS = flags.FLAGS
 flags.DEFINE_integer("n_nodes",
@@ -78,14 +79,25 @@ def k_to_k_plus_one(graph, k_list):
 
 
 def cliques_in_graph(graph):
+    """Returns a dictionary with the cliques that each node is part of.
+
+    cliques_in_graph[k][i] is a list with the k-1 nodes such that the node i
+    and these k-1 nodes form a k clique."""
+
     cliques = {2: list_of_neighbours(graph)}
     n_nodes = graph.num_nodes()
+
     for k in range(3, n_nodes+1):
         cliques[k] = k_to_k_plus_one(graph, cliques[k-1])
+
     return cliques
 
 
 def cliques_counter(graph):
+    """The number of k cliques that each node is part of.
+
+    cliques_counter[i, k] is the number of k cliques that the node i is part
+    of."""
     cliques = cliques_in_graph(graph)
     n_nodes = graph.num_nodes()
     cliques_count = torch.zeros(n_nodes, n_nodes-1)
@@ -95,10 +107,40 @@ def cliques_counter(graph):
     return cliques_count
 
 
+def cliques_graph_and_complement(graph):
+    """cliques of graph and complement as a (n_nodes) x 2 x (nodes-1) tensor"""
+    complement = complement_graph(graph)
+    cliques_graph = cliques_counter(graph)
+    cliques_complement = cliques_counter(complement)
+    cliques_graph = cliques_graph[:, None, :]
+    cliques_complement = cliques_complement[:, None, :]
+    total_cliques = torch.cat((cliques_graph, cliques_complement), 1)
+
+    return total_cliques
+
+
+def cliques_as_feature(graph, normalized=True):
+    """returns cliques as a graph feature"""
+
+    cliques = cliques_graph_and_complement(graph)
+    if normalized:
+        # if we want the features normalized they will be returned as values
+        # between 0 and 1.
+        n_nodes = graph.num_nodes()
+        comb_tensor = torch.zeros(2, n_nodes-1)
+        for i in range(n_nodes-1):
+            comb_tensor[:, i] = 1/comb(n_nodes-1, i+1)
+        cliques = comb_tensor*cliques
+        graph.ndata['cliques'] = cliques
+    else:
+        graph.ndata['cliques'] = cliques
+    return graph
+
+
 def main(argv):
     g = random_graph(FLAGS.n_nodes, FLAGS.n_edges)
-    print(list_of_neighbours(g, 5))
-    print(cliques_counter(g))
+    # g = complete_graph(FLAGS.n_nodes)
+    print(cliques_as_feature(g).ndata['cliques'])
 
 
 if __name__ == '__main__':
