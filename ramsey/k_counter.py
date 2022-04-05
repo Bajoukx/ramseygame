@@ -22,18 +22,14 @@ from absl import app
 from absl import logging
 from absl import flags
 
-from graph_generator import random_graph, complement_graph, complete_graph
+from graph_generator import random_graph, complement_graph  # complete_graph
 
 FLAGS = flags.FLAGS
-flags.DEFINE_integer("n_nodes",
-                     10,
-                     "Number of nodes that the graph should have.")
-flags.DEFINE_integer("n_edges",
-                     None,
-                     "Number of edges of the graph.")
-flags.DEFINE_integer("max_clique_size",
-                     None,
-                     "Size of cliques to be computed to.")
+flags.DEFINE_integer('n_nodes', 10,
+                     'Number of nodes that the graph should have.')
+flags.DEFINE_integer('n_edges', None, 'Number of edges of the graph.')
+flags.DEFINE_integer('max_clique_size', None,
+                     'Size of cliques to be computed to.')
 
 
 def list_of_neighbours(graph, node=None):
@@ -49,7 +45,7 @@ def list_of_neighbours(graph, node=None):
         return lst
     else:
         assert isinstance(node, int), f'expected {node} to be an integer'
-        assert (node >= 0) and (node < graph.num_nodes()),\
+        assert 0 <= node < graph.num_nodes(),\
             f'expected {node} to be between 0 and {graph.num_nodes()}'
         node_list = graph.successors(node)
         return sorted([x.item() for x in node_list])
@@ -87,8 +83,8 @@ def cliques_in_graph(graph):
     cliques = {2: list_of_neighbours(graph)}
     n_nodes = graph.num_nodes()
 
-    for k in range(3, n_nodes+1):
-        cliques[k] = k_to_k_plus_one(graph, cliques[k-1])
+    for k in range(3, n_nodes + 1):
+        cliques[k] = k_to_k_plus_one(graph, cliques[k - 1])
 
     return cliques
 
@@ -100,10 +96,10 @@ def cliques_counter(graph):
     of."""
     cliques = cliques_in_graph(graph)
     n_nodes = graph.num_nodes()
-    cliques_count = torch.zeros(n_nodes, n_nodes-1)
+    cliques_count = torch.zeros(n_nodes, n_nodes - 1)
     for i in range(n_nodes):
-        for j in range(2, n_nodes+1):
-            cliques_count[i, j-2] = len(cliques[j][i])
+        for j in range(2, n_nodes + 1):
+            cliques_count[i, j - 2] = len(cliques[j][i])
     return cliques_count
 
 
@@ -124,26 +120,24 @@ def cliques_as_feature(graph, normalized=True):
 
     cliques = cliques_graph_and_complement(graph)
     if normalized:
-        # if we want the features normalized they will be returned as values
-        # between 0 and 1.
+        # normalized features have values between 0 and 1.
         n_nodes = graph.num_nodes()
-        comb_tensor = torch.zeros(2, n_nodes-1)
-        for i in range(n_nodes-1):
-            comb_tensor[:, i] = 1/comb(n_nodes-1, i+1)
-        cliques = comb_tensor*cliques
+        comb_tensor = torch.zeros(2, n_nodes - 1)
+        for i in range(n_nodes - 1):
+            comb_tensor[:, i] = 1 / comb(n_nodes - 1, i + 1)
+        cliques = comb_tensor * cliques
         graph.ndata['cliques'] = cliques
     else:
         graph.ndata['cliques'] = cliques
     return graph
 
 
-def main(argv):
+def main(_):
     g = random_graph(FLAGS.n_nodes, FLAGS.n_edges)
     # g = complete_graph(FLAGS.n_nodes)
-    print(cliques_as_feature(g).ndata['cliques'])
+    print(cliques_as_feature(g, normalized=False).ndata['cliques'])
 
 
 if __name__ == '__main__':
     logging.set_verbosity(logging.INFO)
     app.run(main)
-

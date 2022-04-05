@@ -3,7 +3,7 @@
 
 import torch.nn as nn
 
-from k_counter import cliques_graph_and_complement
+from k_counter import cliques_as_feature
 from graph_generator import complete_graph
 
 
@@ -26,7 +26,7 @@ class Encoder(nn.Module):
 class Decoder(nn.Module):
     """The decoder computes the k_cliques of a graph"""
     def forward(self, graph):
-        return cliques_graph_and_complement(graph)
+        return cliques_as_feature(graph).ndata['cliques']
 
 
 class AutoEncoder(nn.Module):

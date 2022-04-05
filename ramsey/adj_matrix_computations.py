@@ -9,15 +9,11 @@ from absl import flags
 from graph_generator import random_graph, complement_graph
 
 FLAGS = flags.FLAGS
-flags.DEFINE_integer("n_nodes",
-                     10,
-                     "Number of nodes that the graph should have.")
-flags.DEFINE_integer("n_edges",
-                     None,
-                     "Number of edges of the graph.")
-flags.DEFINE_integer("max_clique_size",
-                     None,
-                     "Size of cliques to be computed to.")
+flags.DEFINE_integer('n_nodes', 10,
+                     'Number of nodes that the graph should have.')
+flags.DEFINE_integer('n_edges', None, 'Number of edges of the graph.')
+flags.DEFINE_integer('max_clique_size', None,
+                     'Size of cliques to be computed to.')
 
 
 def next_clique_multiplication(cliques, n_nodes=None):
@@ -94,9 +90,9 @@ def cliques_counter(graph, max_clique_size=None):
     all_cliques = [n_nodes * [0.] for _ in range(2, max_clique_size + 1)]
     for clique in range(2, nr_cliques_computed + 1):
         for node in range(n_nodes):
-            all_cliques[clique - 2][node] = torch.sum(
-                cliques[clique][node]
-            ).item() / (np.math.factorial(int(clique) - 1))
+            all_cliques[clique -
+                        2][node] = torch.sum(cliques[clique][node]).item() / (
+                            np.math.factorial(int(clique) - 1))
 
     return torch.Tensor(all_cliques)
 
@@ -112,10 +108,11 @@ def cliques_normalization(cliques):
     return cliques
 
 
-def main(argv):
+def main(_):
     g = random_graph(FLAGS.n_nodes, FLAGS.n_edges)
     # g = complete_graph(FLAGS.n_nodes)
-    cliques, complement_cliques = cliques_graph_and_dual(g, FLAGS.max_clique_size)
+    cliques, complement_cliques = cliques_graph_and_dual(
+        g, FLAGS.max_clique_size)
     print(cliques)
     print(complement_cliques)
     # print(k_cliques(g)[2])
