@@ -20,8 +20,7 @@ def random_graph(n_nodes, n_edges=None):
 
     if n_edges is None:
         n_edges = np.random.randint(n_nodes,
-                                    np.ceil(n_nodes * (n_nodes + 1) / 2)
-                                    )
+                                    np.ceil(n_nodes * (n_nodes + 1) / 2))
 
     # generate random directed graph
     graph = dgl.rand_graph(n_nodes, n_edges)
