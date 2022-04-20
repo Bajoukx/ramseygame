@@ -52,3 +52,21 @@ def complement_graph(graph):
     complement = dgl.graph((src, dst), num_nodes=n_nodes)
 
     return complement
+
+
+def random_graph_p(n_nodes, prob_edge=0.5):
+    """create undirected graph with edges having certain probability"""
+
+    # create a random adjacency matrix
+    adj_matrix = torch.empty(n_nodes, n_nodes).uniform_(0, 1)
+    adj_matrix = (adj_matrix > prob_edge).int()
+
+    # make it symmetric
+    adj_matrix = torch.triu(adj_matrix, diagonal=1)
+    adj_matrix += adj_matrix.transpose(0, 1).clone()
+
+    # transform the adjacency matrix into a graph
+    src, dst = adj_matrix.nonzero().transpose(0, 1).reshape(2, -1)
+    graph = dgl.graph((src, dst))
+
+    return graph

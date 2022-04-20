@@ -5,14 +5,13 @@ heavy without using sparse tensors. It computes the k cliques by
 induction. Cliques of size 2 are given by the edges of a graph, and for every k,
 the k + 1 cliques are computed as:
 
-for each node:
-  for each neighbour of the node:
-    k clique = {node} union {k - 1 other nodes}
+for each node v:
+  for each neighbour of the node u:
+    k clique = {v} union {v_1, v_2, ..., v_(k-1)}
     and
-    k clique = {neighbour} union {k - 1 other nodes}
+    k clique = {u} union {v_1, v_2, ..., v_(k-1)}
     then
-    k + 1 clique = {node, neighbour} union {k - 1 other nodes}
-
+    k + 1 clique = {u, v} union {v_1, v_2, ..., v_(k-1)}
 """
 
 import dgl
@@ -33,7 +32,21 @@ flags.DEFINE_integer('max_clique_size', None,
 
 
 def list_of_neighbours(graph, node=None):
-    """Function returning a list of neighbours of each node."""
+    """Auxiliary function returning a list of neighbours of each node.
+
+    If a node v is specified the function returns the list of nodes v_i for
+    which there is an edge between v and v_i.
+    If no node is specified then the function returns a list with lists of
+    neighbours. Each neighbour will be in a single element list so that the
+    result can be seen as the list of 2-cliques of the given graph.
+
+    E.g.
+    in : graph = complete_graph(4) # a complete graph with 4 nodes
+    in : list_of_neighbours(graph, node=0)
+    out : [1, 2, 3]
+    in : lst_2_cliques = list_of_neighbours(graph)
+    out : [[[1], [2], [3]], [[0], [2], [3]], [[0], [1], [3]], [[0], [1], [2]]]
+    """
 
     assert isinstance(graph, dgl.DGLGraph), 'expected a dgl graph'
 
@@ -52,15 +65,29 @@ def list_of_neighbours(graph, node=None):
 
 
 def k_to_k_plus_one(graph, k_list):
-    """This is the induction step"""
+    """This is the induction step.
+
+    E.g. following the example of the function list_of_neighbours
+    in : lst_3_cliques = k_to_k_plus_one(graph, lst_2_cliques)
+    out : [[[1, 2], [1, 3], [2, 3]],
+           [[0, 2], [0, 3], [2, 3]],
+           [[0, 1], [0, 3], [1, 3]],
+           [[0, 1], [0, 2], [1, 2]]]
+    """
     list_k_plus_one_cliques = []
+
+    # The function runs as a Message Passing Layer with an intersection of
+    # sets with k-cliques being made for every edge. To go through all edges
+    # there is a for cycle going over every node and then every neighbour
     for node_idx in range(graph.num_nodes()):
         k_plus_one_cliques_in_node = []
         node_neighbours = list_of_neighbours(graph, node_idx)
+        k_tuples_node = [tuple(x) for x in k_list[node_idx]]
 
         for neighbour in node_neighbours:
+            # by intersecting the list of cliques of two adjacent nodes we
+            # find the common k-cliques that will be a k+1-clique of the nodes
             k_tuples = [tuple(x) for x in k_list[neighbour]]
-            k_tuples_node = [tuple(x) for x in k_list[node_idx]]
             common_cliques = set(k_tuples).intersection(k_tuples_node)
 
             for k_clique in common_cliques:
@@ -133,9 +160,8 @@ def cliques_as_feature(graph, normalized=True):
 
 
 def main(_):
-    g = random_graph(FLAGS.n_nodes, FLAGS.n_edges)
-    # g = complete_graph(FLAGS.n_nodes)
-    print(cliques_as_feature(g, normalized=False).ndata['cliques'])
+    rand_graph = random_graph(FLAGS.n_nodes, FLAGS.n_edges)
+    print(cliques_as_feature(rand_graph, normalized=True).ndata['cliques'])
 
 
 if __name__ == '__main__':
