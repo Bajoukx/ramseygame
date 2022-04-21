@@ -24,7 +24,7 @@ def next_clique_multiplication(cliques, n_nodes=None):
     and zero otherwise. Then A_{k+1} can be computed from A_k in the
     following way:
     For a node i, let A^0_{k,i} be the k-1 dimensional tensor A_k[i, ...]. Then
-    then entry (i_1,... , i_k) in
+    then entry (i_1, ..., i_k) in
     A^0_{k,i} * A_k
     will be 1 if the nodes form a k clique and
     (i, i_2, ..., i_k) forms one as well. The same way, an entry in
