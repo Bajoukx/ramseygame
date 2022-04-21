@@ -38,10 +38,10 @@ complement of the graph G.
 ### Quick computation of $C_G$
 
 There is a method to compute the clique tensor of a graph that uses the 
-adjacency matrix multiplication but is slow. The method implemented now is a 
-message passing algorithm using lists that can be improved. As an exercise 
-it would also be interesting to create a graph neural network to predict the 
-tensor and see how well it fares.
+adjacency matrix multiplication, but it is slow. The method implemented now 
+is a message passing algorithm using lists that can be improved. As an 
+exercise it would also be interesting to create a graph neural network to 
+predict the tensor and see how well it fares.
 
 ## Detecting if a tensor is the clique tensor of a graph
 
@@ -50,6 +50,26 @@ that correspond to $C_G$ for a graph G. This could improve the search for
 graphs that do not have k-cliques for large k.
 
 ### Encoder-decoder
+
+#### Clique tensor -> Graph -> Clique tensor
+
+One idea is to go from clique tensor to graph to clique tensor. The accuracy 
+needs to be measured ignoring the order of the vertices (it can be aligned 
+by k-clique size, splitting ties with the next k+1-cliques).
+
+The problems arising with the encoder is that equal number of cliques for 
+two distinct nodes does not imply, at all, that the nodes should be 
+connected. Furthermore, if one takes the example of a cycle-graph, we have 
+the same number of k-cliques for all nodes but there need to be some 
+randomness in choosing which edges to select.
+
+#### Cliques tensor -> Embedding -> Clique tensor
+
+A possible approach is to use a model similar to the one used in transformer 
+models (e.g., BERT and RoBERTa). In particular, one can simply mask some 
+entries of a clique tensor and train the model to determine them again. Then 
+one would use the embedding to directly determine the corresponding 
+graph. 
 
 ### Auto Generative network
 
@@ -73,6 +93,10 @@ of graphs and clique tensors might be enough to provide us relations of the
 type: 
 
 **condition(k-cliques) => \sum (k+1)-cliques > 0**
+
+### Data analysis
+
+### Reinforcement learning
 
 ## Adjacency matrix properties
 
