@@ -6,15 +6,7 @@ import networkx
 from torch.utils.data import Dataset
 
 
-def compose_file_name(self):
-        """Composes the entire file name and path for the data."""
-        path = os.path.join(self.file_path, 'ramsey_', self.n_samples)
-        for node in self.n_nodes:
-            path = os.path.join(path, '_', node)
-        path = os.path.join(path, '_', self.algorithm)
-        path = os.path.join(path, '.npy')
-
-class CustomGraphDataset(Dataset):
+class RamseyGraphDataset(Dataset):
 
     def __init__(self, n_nodes, edge_probability, n_samples=1000000):
         self.n_nodes = n_nodes
