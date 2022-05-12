@@ -3,6 +3,7 @@
 from absl import app
 from absl import flags
 from absl import logging
+import torch
 
 from ramsey.dataset.generator import RamseyGraphDataset
 
@@ -11,19 +12,16 @@ FLAGS = flags.FLAGS
 flags.DEFINE_integer('n_nodes', 6, 'Number of Nodes', lower_bound=0)
 
 
+def log_one_sample(dataset):
+    """Logs the data of one element of the dataset."""
+    return logging.info(next(iter(dataset)))
+
+
 def main(_):
     """Logs the data of one dataset element."""
     dataset = RamseyGraphDataset(FLAGS.n_nodes, 0.5, n_samples=1)
-    
-    # logging.info('Graph: %s', dataset[0]['graph'])
-    # logging.info('Clique number: %s', dataset[0]['clique_number'])
-    # logging.info('Dual: %s', dataset[0]['dual'])
-    # logging.info('Dual clique number: %s', dataset[0]['dual_clique_number'])
-    # logging.info('Graph cliques: %s', dataset[0]['cliques'])
-    # logging.info('Dual cliques: %s', dataset[0]['dual_cliques'])
-    for items in dataset:
-        logging.info(items)
 
+    log_one_sample(dataset)
 
 if __name__ == '__main__':
     app.run(main)
