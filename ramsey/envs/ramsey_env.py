@@ -32,10 +32,10 @@ class RamseyGame(gym.Env):
     """Custom Environment that follows gym interface"""
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, n_nodes, k_clique, quit_when_found=False):
+    def __init__(self, n_nodes, k_clique, save_counterexample=False):
         """Inits the Ramsey Game gym environment."""
         super().__init__()
-        self.quit_when_found = quit_when_found
+        self.save_counterexample = save_counterexample
         self.n_nodes = n_nodes
         self.n_edges = int(self.n_nodes * (self.n_nodes - 1) / 2)
         self.k_clique = k_clique
@@ -52,26 +52,25 @@ class RamseyGame(gym.Env):
         clique and finnally encoding the graph to a binary vector.
         """
         self.graph = networkx.empty_graph(self.n_nodes)
-        # Place an edge in the graph.
+        # The agent has the ability to change the entire graph with one action.
         actions = encoders.one_hot_decode(self.action_dictionary, action)
         for edge in actions:
             self.graph.add_edge(*edge)
 
         # Get reward and update done.
-        self.reward = self._get_reward()
+        reward = self._get_reward()
 
         # Update observation
         observation = encoders.one_hot_encode(self.action_dictionary,
                                               self.graph.edges)
 
         info = {}
-        return observation, self.reward, self.done, info
+        return observation, reward, self.done, info
 
     def reset(self):
         """Resets the environment when a k_clique is found."""
         self.score = 0
         self.done = False
-        self.previous_reward = 0
 
         self.graph = networkx.empty_graph(self.n_nodes)
         self.nodes = list(self.graph.nodes)
@@ -86,14 +85,31 @@ class RamseyGame(gym.Env):
         """Nice visualization of graph."""
         if mode == 'human':
             networkx.draw(self.graph)
+            networkx.draw(networkx.complement(self.graph), node_color='r')
             plt.pause(0.1)
             plt.clf()
 
     def close(self):
-        pass
+        """Acts as a data saver.
+
+        Given a graph with n_nodes we may find that there is a configuration
+        where neither the graph, nor it's dual, contain a k_clique. We call this
+        configuration a RamseyGame counterexample.
+        When a counterexample is found, we save it to a file.
+
+        TODO(@ze): Create a callback function for saving the the graph when the
+        model is trained. The callback function should be a input for the
+        training function.
+        """
+
+        networkx.write_edgelist(self.graph, 'ramsey/graphs/win.txt')
+        sys.exit()
 
     def _get_reward(self):
         """Reward function for k_clique finding.
+
+        Currently this function also handles the logic behind saving a
+        RamseyGame counterexample. See self.close() method.
 
         Ideas to improve this reward function:
         - Penalize non connected graphs.
@@ -103,13 +119,13 @@ class RamseyGame(gym.Env):
         """
         # Get biggest clique.
         biggest_clique = reward_functions.ramsey_number(self.graph)
-        self.reward = -biggest_clique
-        #print(biggest_clique)
+        reward = -biggest_clique
+
+        # See self.close() method for TODO comment.
         if biggest_clique <= self.k_clique:
             self.done = True
 
-            if self.quit_when_found:
+            if self.save_counterexample:
                 if biggest_clique < self.k_clique:
-                    networkx.write_edgelist(self.graph, 'ramsey/graphs/win.txt')
-                    sys.exit()
-        return self.reward
+                    self.close()
+        return reward
