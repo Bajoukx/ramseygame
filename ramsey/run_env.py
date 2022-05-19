@@ -11,8 +11,7 @@ from stable_baselines3 import A2C
 from stable_baselines3.common.vec_env import SubprocVecEnv
 from stable_baselines3.common.monitor import Monitor
 
-import ramsey # pylint: disable=unused-import
-
+import ramsey  # pylint: disable=unused-import
 
 FLAGS = flags.FLAGS
 
@@ -31,8 +30,7 @@ flags.DEFINE_integer('n_timesteps',
 flags.DEFINE_boolean(
     'save_counterexample', False,
     'Whether to save the counterexample. A counterexample is a graph (and \
-    it\'s dual) that does not have a clique of size k_clique_number.'
-)
+    it\'s dual) that does not have a clique of size k_clique_number.')
 
 
 def make_environment(environment_id, seed, n_nodes, k_clique,
