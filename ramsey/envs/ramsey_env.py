@@ -47,9 +47,10 @@ class RamseyGame(gym.Env):
     def step(self, action):
         """Performs a step in the environment.
 
-        The step consists of adding an edge to the graph, computting the cliques
-        of the graph, giving a reward according to the size of the biggest
-        clique and finnally encoding the graph to a binary vector.
+        The step consists of adding an arbitrary number of edges to the
+        graph,computting the cliques of the graph, giving a reward according to
+        the size of the biggest clique and finnally encoding the graph to a
+        binary vector, in order to satisfy the gym interface.
         """
         self.graph = networkx.empty_graph(self.n_nodes)
         # The agent has the ability to change the entire graph with one action.
@@ -101,8 +102,8 @@ class RamseyGame(gym.Env):
         model is trained. The callback function should be a input for the
         training function.
         """
-
-        networkx.write_edgelist(self.graph, 'ramsey/graphs/win.txt')
+        file_name = 'ramsey/graphs/win_' + str(self.k_clique) + '_clique_' + str(self.n_nodes) + '_nodes.txt'
+        networkx.write_edgelist(self.graph, file_name)
         sys.exit()
 
     def _get_reward(self):
