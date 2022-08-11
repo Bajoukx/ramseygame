@@ -54,7 +54,7 @@ class RamseyGameMultiplayer(gym.Env):
         if self.current_player == 1:
             self.current_player = 2
         else:
-            self.current_player == 1
+            self.current_player = 1
         # self.current_step += 1
         #print('graph: %s', list(self.graph.edges))
 
@@ -66,7 +66,7 @@ class RamseyGameMultiplayer(gym.Env):
                                               self.graph.edges)
         logging.debug('observation: %s', observation)
         info = {}
-        self.render()
+        #self.render()
         return observation, reward, self.done, info
 
     def _reset_players_score(self):
@@ -97,6 +97,7 @@ class RamseyGameMultiplayer(gym.Env):
     def render(self, mode='human'):
         """Nice visualization of graph."""
         if mode == 'human':
+            logging.debug('edges: %s', self.graph.edges.data())
             colors = []
             for edge in self.graph.edges:
                 if self.graph.get_edge_data(*edge)['player'] == 1:
@@ -105,7 +106,7 @@ class RamseyGameMultiplayer(gym.Env):
                     colors.append('blue')
             networkx.draw(self.graph, edge_color=colors)
             #networkx.draw(networkx.complement(self.graph), node_color='r')
-            plt.pause(0.1)
+            plt.pause(1)
             plt.clf()
 
     def close(self):
@@ -150,9 +151,9 @@ class RamseyGameMultiplayer(gym.Env):
         self.player_biggest_clique = networkx.graph_clique_number(subgraph)
         
         reward = -self.player_biggest_clique
-        
+
         if self.player_biggest_clique >= self.k_clique:
-            logging.info('Player %s has found a clique of size %s', self.current_player, self.player_biggest_clique)
+            logging.debug('Player %s has found a clique of size %s', self.current_player, self.player_biggest_clique)
             self.done = True
             logging.debug('game finished')
 
@@ -162,15 +163,4 @@ class RamseyGameMultiplayer(gym.Env):
                     self.player_biggest_clique < self.k_clique and \
                         self.graph.number_of_edges == self.n_edges:
                 self.close()
-        # # Get biggest clique.
-        # biggest_clique = reward_functions.ramsey_number(self.graph)
-        # reward = -biggest_clique
-
-        # # See self.close() method for TODO comment.
-        # if biggest_clique <= self.k_clique:
-        #     self.done = True
-
-        #     if self.save_counterexample:
-        #         if biggest_clique < self.k_clique:
-        #             self.close()
         return reward
