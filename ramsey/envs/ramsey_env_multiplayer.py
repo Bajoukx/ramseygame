@@ -32,27 +32,15 @@ class RamseyGameMultiplayer(gym.Env):
     def _place_edge(self, action):
         """Places an edge in the graph for the current player."""
         action_edge = self.action_dictionary[action]
-        print('action_edge: %s', action_edge)
+        logging.debug('action_edge: %s', action_edge)
         if self.current_player == 1:
-            print('player 1 previous graph: %s', list(self.graph.edges))
+            logging.debug('player 1 previous graph: %s', list(self.graph.edges))
             self.graph.add_edge(*action_edge, player=1)
-            print('player 1 following graph: %s', list(self.graph.edges))
+            logging.debug('player 1 following graph: %s', list(self.graph.edges))
         else:
-            print('player 2 previous graph: %s', list(self.graph.edges))
+            logging.debug('player 2 previous graph: %s', list(self.graph.edges))
             self.graph.add_edge(*action_edge, player=2)
-            print('player 2 following graph: %s', list(self.graph.edges))
-
-        # Check winning conditions.
-        current_player_edge_list = []
-        for edge in self.graph.edges:
-            if self.graph.get_edge_data(*edge)['player'] == self.current_player:
-                current_player_edge_list.append(edge)
-        
-        subgraph = networkx.Graph()
-        subgraph.add_edges_from(current_player_edge_list)
-        if networkx.graph_clique_number(subgraph) >= self.k_clique:
-            self.done = True
-            print('win lets go')
+            logging.debug('player 2 following graph: %s', list(self.graph.edges))
 
     def step(self, action):
         """Performs a step in the environment.
@@ -62,8 +50,9 @@ class RamseyGameMultiplayer(gym.Env):
         clique and finnally encoding the graph to a binary vector.
         """
         self._place_edge(action)
+        logging.debug('current_player: %s', self.current_player)
         if self.current_player == 1:
-            self.current_player == 2
+            self.current_player = 2
         else:
             self.current_player == 1
         # self.current_step += 1
@@ -75,8 +64,9 @@ class RamseyGameMultiplayer(gym.Env):
         # Update observation
         observation = encoders.one_hot_encode(self.action_dictionary,
                                               self.graph.edges)
-        print('observation: %s', observation)
+        logging.debug('observation: %s', observation)
         info = {}
+        self.render()
         return observation, reward, self.done, info
 
     def _reset_players_score(self):
@@ -91,6 +81,7 @@ class RamseyGameMultiplayer(gym.Env):
         self.current_step = 0
 
         self._reset_players_score()
+        self.player_biggest_clique = 0
         self.done = False
 
         self.graph = networkx.empty_graph(self.n_nodes)
@@ -100,14 +91,20 @@ class RamseyGameMultiplayer(gym.Env):
         self.previous_biggest_clique = 0
 
         observation = self.edges
-        print('reset done')
+        logging.debug('reset done')
         return observation  # reward, done, info can't be included
 
     def render(self, mode='human'):
         """Nice visualization of graph."""
         if mode == 'human':
-            networkx.draw(self.graph)
-            networkx.draw(networkx.complement(self.graph), node_color='r')
+            colors = []
+            for edge in self.graph.edges:
+                if self.graph.get_edge_data(*edge)['player'] == 1:
+                    colors.append('red')
+                else:
+                    colors.append('blue')
+            networkx.draw(self.graph, edge_color=colors)
+            #networkx.draw(networkx.complement(self.graph), node_color='r')
             plt.pause(0.1)
             plt.clf()
 
@@ -140,15 +137,40 @@ class RamseyGameMultiplayer(gym.Env):
         - Use the stepaction. A action is placing an edge, start counting
         cliques from that edge.
         """
-        # Get biggest clique.
-        biggest_clique = reward_functions.ramsey_number(self.graph)
-        reward = -biggest_clique
+        # Check winning conditions.
+        current_player_edge_list = []
+        for edge in self.graph.edges:
+            if self.graph.get_edge_data(*edge)['player'] == self.current_player:
+                current_player_edge_list.append(edge)
+        
+        subgraph = networkx.Graph()
+        subgraph.add_edges_from(current_player_edge_list)
 
-        # See self.close() method for TODO comment.
-        if biggest_clique <= self.k_clique:
+        previous_player_biggest_clique = self.player_biggest_clique
+        self.player_biggest_clique = networkx.graph_clique_number(subgraph)
+        
+        reward = -self.player_biggest_clique
+        
+        if self.player_biggest_clique >= self.k_clique:
+            logging.info('Player %s has found a clique of size %s', self.current_player, self.player_biggest_clique)
             self.done = True
+            logging.debug('game finished')
 
-            if self.save_counterexample:
-                if biggest_clique < self.k_clique:
-                    self.close()
+        # Check problem solved conditions.
+        if self.save_counterexample:
+            if previous_player_biggest_clique < self.k_clique and \
+                    self.player_biggest_clique < self.k_clique and \
+                        self.graph.number_of_edges == self.n_edges:
+                self.close()
+        # # Get biggest clique.
+        # biggest_clique = reward_functions.ramsey_number(self.graph)
+        # reward = -biggest_clique
+
+        # # See self.close() method for TODO comment.
+        # if biggest_clique <= self.k_clique:
+        #     self.done = True
+
+        #     if self.save_counterexample:
+        #         if biggest_clique < self.k_clique:
+        #             self.close()
         return reward
