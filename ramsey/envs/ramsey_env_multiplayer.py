@@ -67,6 +67,7 @@ class RamseyGameMultiplayer(gym.Env):
         # Update observation
         observation = encoders.one_hot_encode(self.action_dictionary,
                                               self.graph.edges)
+        observation = np.array(observation)
         logging.debug('observation: %s', observation)
         info = {}
         #self.render()

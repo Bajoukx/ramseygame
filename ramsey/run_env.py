@@ -57,7 +57,7 @@ def main(_):
 
     cpu_count = multiprocessing.cpu_count()
     env_list = [
-        make_environment('RamseyGame-v1',
+        make_environment('RamseyGame-v0',
                          seed,
                          FLAGS.n_nodes,
                          FLAGS.k_clique_number,
