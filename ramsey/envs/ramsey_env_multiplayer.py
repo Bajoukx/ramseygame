@@ -10,29 +10,25 @@ import networkx
 import numpy as np
 
 from ramsey import encoders
-from ramsey import reward_functions
 
 
 class RamseyGameMultiplayer(gym.Env):
     """Custom Environment that follows gym interface"""
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, n_nodes, k_clique, save_counterexample=False):
+    def __init__(self, config):
         """Inits the Ramsey Game gym environment."""
         super().__init__()
 
         # TODO: Create a fonfiguration file where the environment parameters
-        # are saved. 
-        self.save_counterexample = save_counterexample
-        self.n_nodes = n_nodes
-        self.n_edges = int(self.n_nodes * (self.n_nodes - 1) / 2)
-        self.k_clique = k_clique
-        self.action_dictionary = encoders.graph_hot_encoder_dict(self.n_nodes)
+        # are saved.
+        self.config = config
+        self.action_dictionary = encoders.graph_hot_encoder_dict(self.config.n_nodes)
 
         self.agents = ['player_1', 'player_2']
 
-        self.action_space = gym.spaces.Discrete(self.n_edges)
-        self.observation_space = gym.spaces.MultiBinary(self.n_edges)
+        self.action_space = gym.spaces.Discrete(self.config.n_edges)
+        self.observation_space = gym.spaces.MultiBinary(self.config.n_edges)
 
     def _place_edge(self, action):
         """Places an edge in the graph for the current player."""
@@ -92,10 +88,10 @@ class RamseyGameMultiplayer(gym.Env):
         self.player_biggest_clique = 0
         self.done = False
 
-        self.graph = networkx.empty_graph(self.n_nodes)
-        self.previous_graph = networkx.empty_graph(self.n_nodes)
+        self.graph = networkx.empty_graph(self.config.n_nodes)
+        self.previous_graph = networkx.empty_graph(self.config.n_nodes)
         self.nodes = list(self.graph.nodes)
-        self.edges = np.zeros(self.n_edges, dtype=int)  #list(self.graph.edges)
+        self.edges = np.zeros(self.config.n_edges, dtype=int)  #list(self.graph.edges)
         self.biggest_clique = 0
         self.previous_biggest_clique = 0
 
@@ -112,7 +108,7 @@ class RamseyGameMultiplayer(gym.Env):
                 if self.graph.get_edge_data(*edge)['player'] == 1:
                     colors.append('red')
                 else:
-                    colors.append('blue')
+                    colors.append('green')
             networkx.draw(self.graph, edge_color=colors)
             #networkx.draw(networkx.complement(self.graph), node_color='r')
             plt.pause(1)
@@ -130,8 +126,8 @@ class RamseyGameMultiplayer(gym.Env):
         model is trained. The callback function should be a input for the
         training function.
         """
-        file_name = 'ramsey/graphs/win_' + str(self.k_clique) + '_clique_' + \
-            str(self.n_nodes) + '_nodes.txt'
+        file_name = 'ramsey/graphs/win_' + str(self.config.k_clique) + '_clique_' + \
+            str(self.config.n_nodes) + '_nodes.txt'
         networkx.write_edgelist(self.graph, file_name)
         sys.exit()
 
@@ -152,30 +148,30 @@ class RamseyGameMultiplayer(gym.Env):
         for edge in self.graph.edges:
             if self.graph.get_edge_data(*edge)['player'] == self.current_player:
                 current_player_edge_list.append(edge)
-        
+
         subgraph = networkx.Graph()
         subgraph.add_edges_from(current_player_edge_list)
 
         previous_player_biggest_clique = self.player_biggest_clique
         self.player_biggest_clique = networkx.graph_clique_number(subgraph)
-        
+
         self.reward -= 1
         reward = self.reward
 
         # Penalty for not adding an edge.
         if self.previous_graph.number_of_edges() == self.graph.number_of_edges():
             self.done = True
-            reward -= self.n_edges * 10
+            reward -= self.config.n_edges * 10
 
-        if self.player_biggest_clique >= self.k_clique:
+        if self.player_biggest_clique >= self.config.k_clique:
             logging.debug('Player %s has found a clique of size %s', self.current_player, self.player_biggest_clique)
             self.done = True
             logging.debug('game finished')
 
         # Check problem solved conditions.
-        if self.save_counterexample:
-            if previous_player_biggest_clique < self.k_clique and \
-                    self.player_biggest_clique < self.k_clique and \
-                        self.graph.number_of_edges == self.n_edges:
+        if self.config.save_counterexample:
+            if previous_player_biggest_clique < self.config.k_clique and \
+                    self.player_biggest_clique < self.config.k_clique and \
+                        self.graph.number_of_edges == self.config.n_edges:
                 self.close()
         return reward

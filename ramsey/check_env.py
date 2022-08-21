@@ -1,17 +1,15 @@
 """Learns the environment"""
 
-import multiprocessing
-
 from absl import app
 from absl import logging
 from absl import flags
 
 import gym
 from stable_baselines3 import A2C
-from stable_baselines3.common.vec_env import SubprocVecEnv
 from stable_baselines3.common.monitor import Monitor
 
 import ramsey  # pylint: disable=unused-import
+from ramsey.configs.graph import GraphConfig
 
 FLAGS = flags.FLAGS
 
@@ -33,16 +31,12 @@ flags.DEFINE_boolean(
     it\'s dual) that does not have a clique of size k_clique_number.')
 
 
-def make_environment(environment_id, seed, n_nodes, k_clique,
-                     save_counterexample):
+def make_environment(environment_id, seed, graph_config):
     """Returns a function that creates the environment."""
 
     def get_env():
         """Returns a environment."""
-        env = gym.make(environment_id,
-                       n_nodes=n_nodes,
-                       k_clique=k_clique,
-                       save_counterexample=save_counterexample)
+        env = gym.make(environment_id, config=graph_config)
         env = Monitor(env)
         env.seed(seed)
         env.reset()
@@ -54,10 +48,12 @@ def make_environment(environment_id, seed, n_nodes, k_clique,
 def main(_):
     """Learns the environment."""
 
-    env = gym.make('RamseyGame-v1',
-                    n_nodes=FLAGS.n_nodes,
-                    k_clique=FLAGS.k_clique_number,
-                    save_counterexample=FLAGS.save_counterexample)
+    graph_config = GraphConfig(n_nodes=FLAGS.n_nodes,
+                               k_clique=FLAGS.k_clique_number,
+                               save_counterexample=FLAGS.save_counterexample)
+    print('graph_config:', graph_config)
+
+    env = gym.make('RamseyGame-v1', config=graph_config)
     env = Monitor(env)
     env.seed(42)
     env.reset()
