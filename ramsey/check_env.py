@@ -62,7 +62,7 @@ def main(_):
     env.seed(42)
     env.reset()
 
-    model = A2C('MlpPolicy', env)#, verbose=1)
+    model = A2C('MlpPolicy', env, verbose=1)
 
     model.learn(total_timesteps=FLAGS.n_timesteps)
 
