@@ -20,8 +20,6 @@ class RamseyGameMultiplayer(gym.Env):
         """Inits the Ramsey Game gym environment."""
         super().__init__()
 
-        # TODO: Create a fonfiguration file where the environment parameters
-        # are saved.
         self.config = config
         self.action_dictionary = encoders.graph_hot_encoder_dict(self.config.n_nodes)
 
@@ -84,7 +82,7 @@ class RamseyGameMultiplayer(gym.Env):
         self.current_player = 1
         self.current_step = 0
 
-        self.reward = 0
+        self.reward = [0, 0]
         self._reset_players_score()
         self.player_biggest_clique = 0
         self.done = False
@@ -156,13 +154,14 @@ class RamseyGameMultiplayer(gym.Env):
         previous_player_biggest_clique = self.player_biggest_clique
         self.player_biggest_clique = networkx.graph_clique_number(subgraph)
 
-        self.reward -= 1
-        reward = self.reward
+        self.reward[0] = self.reward[0] - 1
+        self.reward[1] = self.reward [1] - 1
+        rewards = [self.reward[0], self.reward[1]]
 
         # Penalty for not adding an edge.
         if self.previous_graph.number_of_edges() == self.graph.number_of_edges():
             self.done = True
-            reward -= self.config.n_edges * 10
+            rewards[0] = rewards[0] - self.config.n_edges * 10
 
         if self.player_biggest_clique >= self.config.k_clique:
             logging.debug('Player %s has found a clique of size %s', self.current_player, self.player_biggest_clique)
@@ -175,4 +174,4 @@ class RamseyGameMultiplayer(gym.Env):
                     self.player_biggest_clique < self.config.k_clique and \
                         self.graph.number_of_edges == self.config.n_edges:
                 self.close()
-        return reward
+        return rewards
